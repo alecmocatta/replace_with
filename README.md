@@ -1,14 +1,14 @@
 # replace_with
 
-[![Crates.io](https://img.shields.io/crates/v/replace_with.svg?maxAge=86400)](https://crates.io/crates/replace_with)
-[![Apache-2.0 licensed](https://img.shields.io/crates/l/replace_with.svg?maxAge=2592000)](LICENSE.txt)
+[![Crates.io](https://img.shields.io/crates/v/replace_with.svg?maxAge=86400&)](https://crates.io/crates/replace_with)
+[![Apache-2.0 licensed](https://img.shields.io/crates/l/replace_with.svg?maxAge=2592000&)](LICENSE.txt)
 [![Build Status](https://travis-ci.com/alecmocatta/replace_with.svg?branch=master)](https://travis-ci.com/alecmocatta/replace_with)
 
-[Docs](https://docs.rs/replace_with/0.1.0)
+[Docs](https://docs.rs/replace_with/0.1.1)
 
 Temporarily take ownership of a value at a mutable location, and replace it with a new value based on the old one.
 
-This crate provides the function [`replace_with()`](https://docs.rs/replace_with/0.1.0/replace_with/fn.replace_with.html), which is like [`std::mem::replace()`](https://doc.rust-lang.org/std/mem/fn.replace.html) except it allows the replacement value to be mapped from the original value.
+This crate provides the function [`replace_with()`](https://docs.rs/replace_with/0.1.1/replace_with/fn.replace_with.html), which is like [`std::mem::replace()`](https://doc.rust-lang.org/std/mem/fn.replace.html) except it allows the replacement value to be mapped from the original value.
 
 See [RFC 1736](https://github.com/rust-lang/rfcs/pull/1736) for a lot of discussion as to its merits. It was never merged, and the desired ability to temporarily move out of `&mut T` doesn't exist yet, so this crate is my interim solution.
 

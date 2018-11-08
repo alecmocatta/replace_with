@@ -59,7 +59,7 @@
 //!
 //! Huzzah!
 
-#![doc(html_root_url = "https://docs.rs/replace_with/0.1.0")]
+#![doc(html_root_url = "https://docs.rs/replace_with/0.1.1")]
 
 use std::{mem, process, ptr};
 
@@ -76,6 +76,7 @@ fn catch_unwind<F: FnOnce() -> T, T, P: FnOnce()>(f: F, p: P) -> T {
 	let x = CatchUnwind(mem::ManuallyDrop::new(p));
 	let t = f();
 	let _ = unsafe { ptr::read(&*x.0) };
+	mem::forget(x);
 	t
 }
 
