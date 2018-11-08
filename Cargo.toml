@@ -1,0 +1,18 @@
+[package]
+name = "replace_with"
+version = "0.1.0"
+license = "Apache-2.0"
+authors = ["Alec Mocatta <alec@mocatta.net>"]
+categories = ["rust-patterns"]
+keywords = ["mutability"]
+description = """
+Temporarily take ownership of a value at a mutable location, and replace it with a new value based on the old one.
+"""
+repository = "https://github.com/alecmocatta/replace_with"
+homepage = "https://github.com/alecmocatta/replace_with"
+documentation = "https://docs.rs/replace_with/0.1.0"
+readme = "README.md"
+
+[badges]
+travis-ci = { repository = "alecmocatta/replace_with" }
+maintenance = { status = "actively-developed" }
