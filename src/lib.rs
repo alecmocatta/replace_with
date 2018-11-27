@@ -12,8 +12,12 @@
 //!
 //! It's very akin to [`take_mut`](https://github.com/Sgeo/take_mut), though uses `Drop` instead of
 //! [`std::panic::catch_unwind()`] to react to unwinding, which avoids the optimisation barrier of
-//! calling the `extern "C" __rust_maybe_catch_panic()`. As such it's up to ∞x faster. It's also
-//! aesthetically a little prettier (I think).
+//! calling the `extern "C" __rust_maybe_catch_panic()`. As such it's up to ∞x faster. The API also
+//! attempts to make slightly more explicit the behavior on panic – [`replace_with()`] accepts two
+//! closures such that aborting in the "standard case" where the mapping closure (`FnOnce(T) -> T`)
+//! panics (as [`take_mut::take()`](https://docs.rs/take_mut/0.2.2/take_mut/fn.take.html) does) is
+//! avoided. If the second closure (`FnOnce() -> T`) panics, however, then it does indeed abort.
+//! The "abort on first panic" behaviour is available with [`replace_with_or_abort()`].
 //!
 //! # Example
 //!
