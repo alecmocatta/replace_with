@@ -63,7 +63,7 @@
 //!
 //! Huzzah!
 
-#![doc(html_root_url = "https://docs.rs/replace_with/0.1.1")]
+#![doc(html_root_url = "https://docs.rs/replace_with/0.1.2")]
 
 use std::{mem, process, ptr};
 
