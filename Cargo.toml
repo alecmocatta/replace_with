@@ -21,3 +21,4 @@ maintenance = { status = "actively-developed" }
 default = ["std"]
 std = []
 nightly = []
+panic_abort = []

@@ -76,6 +76,36 @@ The [`replace_with_or_abort()`](https://docs.rs/replace_with/0.1.2/replace_with/
 
 As such `replace_with` will by default call [`core::intrinsics::abort()`](https://doc.rust-lang.org/core/intrinsics/fn.abort.html) instead, which in turn requires nightly Rust.
 
+Not everything is lost for stable `no_std` though, `replace_with` has one more trick up its sleeve:
+
+### panic = "abort"
+
+If you define [`panic = abort`](https://doc.rust-lang.org/edition-guide/rust-2018/error-handling-and-panics/aborting-on-panic.html) in the `[profile]` section of your crate's `Cargo.toml` …
+
+```toml
+// Cargo.toml
+
+[profile.debug]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+```
+
+… and add the `"panic_abort"` feature to `replace_with` in the `dependencies` section of your crate's `Cargo.toml` …
+
+```toml
+// Cargo.toml
+
+[dependencies.replace_with]
+features = ["panic_abort"]
+...
+```
+
+… the `"panic_abort"` feature enables the [`replace_with_or_abort_unchecked()`](https://docs.rs/replace_with/0.1.2/replace_with/fn.replace_with_or_abort_unchecked.html) function becomes on stable Rust as an `unsafe` function, a simple wrapper around `ptr::write(dest, f(ptr::read(dest)));`.
+
+**Word of caution:** It is crucial to only ever use this function having defined `panic = "abort"`, or else bad things may happen. It's *up to you* to uphold this invariant!
+
 ## License
 Licensed under either of
 

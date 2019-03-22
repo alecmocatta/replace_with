@@ -228,6 +228,65 @@ pub fn replace_with_or_abort<T, F: FnOnce(T) -> T>(dest: &mut T, f: F) {
 	replace_with(dest, || unsafe { std::intrinsics::abort() }, f);
 }
 
+/// Temporarily takes ownership of a value at a mutable location, and replace it with a new value
+/// based on the old one. Aborts on panic.
+///
+/// We move out of the reference temporarily, to apply a closure `f`, returning a new value, which
+/// is then placed at the original value's location.
+///
+/// # An important note
+///
+/// On panic (or to be more precise, unwinding) of the closure `f`, the process will **abort** to
+/// avoid returning control while `dest` is in a potentially invalid state.
+///
+/// Unlike for `replace_with_or_abort()` users of `replace_with_or_abort_unchecked()` are expected
+/// to have `features = ["panic_abort", …]` defined in `Cargo.toml`
+/// and `panic = "abort"` defined in their profile for it to behave semantically correct:
+///
+/// ```toml
+/// // Cargo.toml
+///
+/// [profile.debug]
+/// panic = "abort"
+///
+/// [profile.release]
+/// panic = "abort"
+/// ```
+///
+/// **Word of caution:** It is crucial to only ever use this function having defined `panic = "abort"`,
+/// or else bad things may happen. It's *up to you* to uphold this invariant!
+///
+/// If this behaviour is undesirable, use [replace_with] or [replace_with_or_default].
+///
+/// Equivalent to `replace_with(dest, || process::abort(), f)`.
+///
+/// # Example
+///
+/// ```
+/// # use replace_with::*;
+/// enum States {
+/// 	A(String),
+/// 	B(String),
+/// }
+///
+/// impl States {
+/// 	fn poll(&mut self) {
+/// 		unsafe {
+/// 			replace_with_or_abort_unchecked(self, |self_| match self_ {
+/// 				States::A(a) => States::B(a),
+///	 				States::B(a) => States::A(a),
+/// 			});
+/// 		}
+/// 	}
+/// }
+/// ```
+///
+#[inline]
+#[cfg(feature = "panic_abort")]
+pub unsafe fn replace_with_or_abort_unchecked<T, F: FnOnce(T) -> T>(dest: &mut T, f: F) {
+	ptr::write(dest, f(ptr::read(dest)));
+}
+
 #[cfg(test)]
 mod test {
 	// These functions copied from https://github.com/Sgeo/take_mut/blob/1bd70d842c6febcd16ec1fe3a954a84032b89f52/src/lib.rs#L102-L147
