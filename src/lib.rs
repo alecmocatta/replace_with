@@ -244,7 +244,7 @@ pub fn replace_with_or_abort<T, F: FnOnce(T) -> T>(dest: &mut T, f: F) {
 /// and `panic = "abort"` defined in their profile for it to behave semantically correct:
 ///
 /// ```toml
-/// // Cargo.toml
+/// # Cargo.toml
 ///
 /// [profile.debug]
 /// panic = "abort"

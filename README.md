@@ -61,7 +61,7 @@ Huzzah!
 To use `replace_with` with `no_std` you have to disable the `std` feature, which is active by default, by specifying your dependency to it like this:
 
 ```toml
-// Cargo.toml
+# Cargo.toml
 
 [dependencies.replace_with]
 version = ...
@@ -83,7 +83,7 @@ Not everything is lost for stable `no_std` though, `replace_with` has one more t
 If you define [`panic = abort`](https://doc.rust-lang.org/edition-guide/rust-2018/error-handling-and-panics/aborting-on-panic.html) in the `[profile]` section of your crate's `Cargo.toml` …
 
 ```toml
-// Cargo.toml
+# Cargo.toml
 
 [profile.debug]
 panic = "abort"
@@ -95,7 +95,7 @@ panic = "abort"
 … and add the `"panic_abort"` feature to `replace_with` in the `dependencies` section of your crate's `Cargo.toml` …
 
 ```toml
-// Cargo.toml
+# Cargo.toml
 
 [dependencies.replace_with]
 features = ["panic_abort"]
