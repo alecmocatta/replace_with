@@ -25,9 +25,6 @@ script: |
       cargo +$RUST_TOOLCHAIN test --no-default-features
     ); done
 
-    cargo +nightly test --no-default-features
-    cargo +nightly test --no-default-features --all-features
-
     cargo +$FMT_VERSION fmt -- --check
     cargo +$CLIPPY_VERSION clippy --all-targets --all-features -- -D warnings
     cargo +$DOCS_RS_VERSION doc --no-deps --all-features
