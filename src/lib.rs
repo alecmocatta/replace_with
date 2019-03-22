@@ -51,6 +51,7 @@
 //! 	B(String),
 //! }
 //!
+//! # #[cfg(any(feature = "std", feature = "nightly"))]
 //! impl States {
 //! 	fn poll(&mut self) {
 //! 		replace_with_or_abort(self, |self_| match self_ {
@@ -63,9 +64,17 @@
 //!
 //! Huzzah!
 
+#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(
+	all(not(feature = "std"), feature = "nightly"),
+	feature(core_intrinsics)
+)]
 #![doc(html_root_url = "https://docs.rs/replace_with/0.1.2")]
 
-use std::{mem, process, ptr};
+#[cfg(not(feature = "std"))]
+extern crate core as std;
+
+use std::{mem, ptr};
 
 struct CatchUnwind<F: FnOnce()>(mem::ManuallyDrop<F>);
 impl<F: FnOnce()> Drop for CatchUnwind<F> {
@@ -197,6 +206,7 @@ pub fn replace_with_or_default<T: Default, F: FnOnce(T) -> T>(dest: &mut T, f: F
 /// 	B(String),
 /// }
 ///
+/// # #[cfg(any(feature = "std", feature = "nightly"))]
 /// impl States {
 /// 	fn poll(&mut self) {
 /// 		replace_with_or_abort(self, |self_| match self_ {
@@ -207,8 +217,15 @@ pub fn replace_with_or_default<T: Default, F: FnOnce(T) -> T>(dest: &mut T, f: F
 /// }
 /// ```
 #[inline]
+#[cfg(feature = "std")]
 pub fn replace_with_or_abort<T, F: FnOnce(T) -> T>(dest: &mut T, f: F) {
-	replace_with(dest, || process::abort(), f);
+	replace_with(dest, || std::process::abort(), f);
+}
+
+#[inline]
+#[cfg(all(not(feature = "std"), feature = "nightly"))]
+pub fn replace_with_or_abort<T, F: FnOnce(T) -> T>(dest: &mut T, f: F) {
+	replace_with(dest, || unsafe { std::intrinsics::abort() }, f);
 }
 
 #[cfg(test)]
@@ -236,7 +253,6 @@ mod test {
 	// SOFTWARE.
 
 	use super::*;
-	use std::panic;
 
 	#[test]
 	fn it_works_recover() {
@@ -246,10 +262,19 @@ mod test {
 			B,
 		};
 		impl Drop for Foo {
+			#[cfg(feature = "std")]
 			fn drop(&mut self) {
 				match *self {
 					Foo::A => println!("Foo::A dropped"),
 					Foo::B => println!("Foo::B dropped"),
+				}
+			}
+
+			#[cfg(not(feature = "std"))]
+			fn drop(&mut self) {
+				match *self {
+					Foo::A => (),
+					Foo::B => (),
 				}
 			}
 		}
@@ -265,8 +290,11 @@ mod test {
 		assert_eq!(&quax, &Foo::B);
 	}
 
+	#[cfg(feature = "std")]
 	#[test]
 	fn it_works_recover_panic() {
+		use std::panic;
+
 		#[derive(PartialEq, Eq, Debug)]
 		enum Foo {
 			A,

@@ -20,8 +20,14 @@ before_script: |
 script: |
   ( set -o errexit;set -o pipefail; set -o xtrace;set -o nounset;
     for RUST_TOOLCHAIN in $RUST_TOOLCHAINS; do (
+      cargo +$RUST_TOOLCHAIN test
       cargo +$RUST_TOOLCHAIN test --all-features
+      cargo +$RUST_TOOLCHAIN test --no-default-features
     ); done
+
+    cargo +nightly test --no-default-features
+    cargo +nightly test --no-default-features --all-features
+
     cargo +$FMT_VERSION fmt -- --check
     cargo +$CLIPPY_VERSION clippy --all-targets --all-features -- -D warnings
     cargo +$DOCS_RS_VERSION doc --no-deps --all-features

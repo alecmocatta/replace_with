@@ -56,6 +56,26 @@ impl States {
 
 Huzzah!
 
+## `no_std`
+
+To use `replace_with` with `no_std` you have to disable the `std` feature, which is active by default, by specifying your dependency to it like this:
+
+```toml
+// Cargo.toml
+
+[dependencies.replace_with]
+version = ...
+default-features = false
+features = []
+...
+```
+
+The [`replace_with()`](https://docs.rs/replace_with/0.1.2/replace_with/fn.replace_with.html) & [`replace_with_or_default()`](https://docs.rs/replace_with/0.1.2/replace_with/fn.replace_with_or_default.html) functions are available on stable Rust both, with and without `std`.
+
+The [`replace_with_or_abort()`](https://docs.rs/replace_with/0.1.2/replace_with/fn.replace_with_or_abort.html) function however by default makes use of [`std::process::abort()`](https://doc.rust-lang.org/std/process/fn.abort.html) which is not available with `no_std`.
+
+As such `replace_with` will by default call [`core::intrinsics::abort()`](https://doc.rust-lang.org/core/intrinsics/fn.abort.html) instead, which in turn requires nightly Rust.
+
 ## License
 Licensed under either of
 

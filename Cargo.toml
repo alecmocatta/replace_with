@@ -16,3 +16,8 @@ readme = "README.md"
 [badges]
 travis-ci = { repository = "alecmocatta/replace_with" }
 maintenance = { status = "actively-developed" }
+
+[features]
+default = ["std"]
+std = []
+nightly = []
