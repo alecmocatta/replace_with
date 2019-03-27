@@ -69,7 +69,7 @@
 	all(not(feature = "std"), feature = "nightly"),
 	feature(core_intrinsics)
 )]
-#![doc(html_root_url = "https://docs.rs/replace_with/0.1.2")]
+#![doc(html_root_url = "https://docs.rs/replace_with/0.1.3")]
 
 #[cfg(not(feature = "std"))]
 extern crate core as std;
