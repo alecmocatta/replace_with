@@ -51,6 +51,7 @@
 //! 	B(String),
 //! }
 //!
+//! # #[cfg(any(feature = "std", feature = "nightly"))]
 //! impl States {
 //! 	fn poll(&mut self) {
 //! 		replace_with_or_abort(self, |self_| match self_ {
@@ -63,9 +64,17 @@
 //!
 //! Huzzah!
 
+#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(
+	all(not(feature = "std"), feature = "nightly"),
+	feature(core_intrinsics)
+)]
 #![doc(html_root_url = "https://docs.rs/replace_with/0.1.2")]
 
-use std::{mem, process, ptr};
+#[cfg(not(feature = "std"))]
+extern crate core as std;
+
+use std::{mem, ptr};
 
 struct CatchUnwind<F: FnOnce()>(mem::ManuallyDrop<F>);
 impl<F: FnOnce()> Drop for CatchUnwind<F> {
@@ -197,6 +206,7 @@ pub fn replace_with_or_default<T: Default, F: FnOnce(T) -> T>(dest: &mut T, f: F
 /// 	B(String),
 /// }
 ///
+/// # #[cfg(any(feature = "std", feature = "nightly"))]
 /// impl States {
 /// 	fn poll(&mut self) {
 /// 		replace_with_or_abort(self, |self_| match self_ {
@@ -207,8 +217,74 @@ pub fn replace_with_or_default<T: Default, F: FnOnce(T) -> T>(dest: &mut T, f: F
 /// }
 /// ```
 #[inline]
+#[cfg(feature = "std")]
 pub fn replace_with_or_abort<T, F: FnOnce(T) -> T>(dest: &mut T, f: F) {
-	replace_with(dest, || process::abort(), f);
+	replace_with(dest, || std::process::abort(), f);
+}
+
+#[inline]
+#[cfg(all(not(feature = "std"), feature = "nightly"))]
+pub fn replace_with_or_abort<T, F: FnOnce(T) -> T>(dest: &mut T, f: F) {
+	replace_with(dest, || unsafe { std::intrinsics::abort() }, f);
+}
+
+/// Temporarily takes ownership of a value at a mutable location, and replace it with a new value
+/// based on the old one. Aborts on panic.
+///
+/// We move out of the reference temporarily, to apply a closure `f`, returning a new value, which
+/// is then placed at the original value's location.
+///
+/// # An important note
+///
+/// On panic (or to be more precise, unwinding) of the closure `f`, the process will **abort** to
+/// avoid returning control while `dest` is in a potentially invalid state.
+///
+/// Unlike for `replace_with_or_abort()` users of `replace_with_or_abort_unchecked()` are expected
+/// to have `features = ["panic_abort", …]` defined in `Cargo.toml`
+/// and `panic = "abort"` defined in their profile for it to behave semantically correct:
+///
+/// ```toml
+/// # Cargo.toml
+///
+/// [profile.debug]
+/// panic = "abort"
+///
+/// [profile.release]
+/// panic = "abort"
+/// ```
+///
+/// **Word of caution:** It is crucial to only ever use this function having defined `panic = "abort"`,
+/// or else bad things may happen. It's *up to you* to uphold this invariant!
+///
+/// If this behaviour is undesirable, use [replace_with] or [replace_with_or_default].
+///
+/// Equivalent to `replace_with(dest, || process::abort(), f)`.
+///
+/// # Example
+///
+/// ```
+/// # use replace_with::*;
+/// enum States {
+/// 	A(String),
+/// 	B(String),
+/// }
+///
+/// impl States {
+/// 	fn poll(&mut self) {
+/// 		unsafe {
+/// 			replace_with_or_abort_unchecked(self, |self_| match self_ {
+/// 				States::A(a) => States::B(a),
+///	 				States::B(a) => States::A(a),
+/// 			});
+/// 		}
+/// 	}
+/// }
+/// ```
+///
+#[inline]
+#[cfg(feature = "panic_abort")]
+pub unsafe fn replace_with_or_abort_unchecked<T, F: FnOnce(T) -> T>(dest: &mut T, f: F) {
+	ptr::write(dest, f(ptr::read(dest)));
 }
 
 #[cfg(test)]
@@ -236,7 +312,6 @@ mod test {
 	// SOFTWARE.
 
 	use super::*;
-	use std::panic;
 
 	#[test]
 	fn it_works_recover() {
@@ -246,10 +321,19 @@ mod test {
 			B,
 		};
 		impl Drop for Foo {
+			#[cfg(feature = "std")]
 			fn drop(&mut self) {
 				match *self {
 					Foo::A => println!("Foo::A dropped"),
 					Foo::B => println!("Foo::B dropped"),
+				}
+			}
+
+			#[cfg(not(feature = "std"))]
+			fn drop(&mut self) {
+				match *self {
+					Foo::A => (),
+					Foo::B => (),
 				}
 			}
 		}
@@ -265,8 +349,11 @@ mod test {
 		assert_eq!(&quax, &Foo::B);
 	}
 
+	#[cfg(feature = "std")]
 	#[test]
 	fn it_works_recover_panic() {
+		use std::panic;
+
 		#[derive(PartialEq, Eq, Debug)]
 		enum Foo {
 			A,
