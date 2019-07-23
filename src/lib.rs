@@ -70,14 +70,27 @@
 	feature(core_intrinsics)
 )]
 #![doc(html_root_url = "https://docs.rs/replace_with/0.1.3")]
+#![warn(
+	missing_copy_implementations,
+	missing_debug_implementations,
+	missing_docs,
+	trivial_casts,
+	trivial_numeric_casts,
+	unused_import_braces,
+	unused_qualifications,
+	unused_results,
+	// clippy::pedantic
+)] // from https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
+
+// #![allow(clippy::inline_always)]
 
 #[cfg(not(feature = "std"))]
 extern crate core as std;
 
 use std::{mem, ptr};
 
-struct CatchUnwind<F: FnOnce()>(mem::ManuallyDrop<F>);
-impl<F: FnOnce()> Drop for CatchUnwind<F> {
+struct OnUnwind<F: FnOnce()>(mem::ManuallyDrop<F>);
+impl<F: FnOnce()> Drop for OnUnwind<F> {
 	#[inline(always)]
 	fn drop(&mut self) {
 		(unsafe { ptr::read(&*self.0) })();
@@ -85,8 +98,8 @@ impl<F: FnOnce()> Drop for CatchUnwind<F> {
 }
 
 #[inline(always)]
-fn catch_unwind<F: FnOnce() -> T, T, P: FnOnce()>(f: F, p: P) -> T {
-	let x = CatchUnwind(mem::ManuallyDrop::new(p));
+fn on_unwind<F: FnOnce() -> T, T, P: FnOnce()>(f: F, p: P) -> T {
+	let x = OnUnwind(mem::ManuallyDrop::new(p));
 	let t = f();
 	let _ = unsafe { ptr::read(&*x.0) };
 	mem::forget(x);
@@ -130,9 +143,9 @@ fn catch_unwind<F: FnOnce() -> T, T, P: FnOnce()>(f: F, p: P) -> T {
 #[inline]
 pub fn replace_with<T, D: FnOnce() -> T, F: FnOnce(T) -> T>(dest: &mut T, default: D, f: F) {
 	unsafe {
-		let t = ptr::read(dest);
-		let t = catch_unwind(move || f(t), || ptr::write(dest, default()));
-		ptr::write(dest, t);
+		let old = ptr::read(dest);
+		let new = on_unwind(move || f(old), || ptr::write(dest, default()));
+		ptr::write(dest, new);
 	}
 }
 
@@ -193,7 +206,7 @@ pub fn replace_with_or_default<T: Default, F: FnOnce(T) -> T>(dest: &mut T, f: F
 /// On panic (or to be more precise, unwinding) of the closure `f`, the process will **abort** to
 /// avoid returning control while `dest` is in a potentially invalid state.
 ///
-/// If this behaviour is undesirable, use [replace_with] or [replace_with_or_default].
+/// If this behaviour is undesirable, use [`replace_with`] or [`replace_with_or_default`].
 ///
 /// Equivalent to `replace_with(dest, || process::abort(), f)`.
 ///
@@ -256,7 +269,7 @@ pub fn replace_with_or_abort<T, F: FnOnce(T) -> T>(dest: &mut T, f: F) {
 /// **Word of caution:** It is crucial to only ever use this function having defined `panic = "abort"`,
 /// or else bad things may happen. It's *up to you* to uphold this invariant!
 ///
-/// If this behaviour is undesirable, use [replace_with] or [replace_with_or_default].
+/// If this behaviour is undesirable, use [`replace_with`] or [`replace_with_or_default`].
 ///
 /// Equivalent to `replace_with(dest, || process::abort(), f)`.
 ///
@@ -349,7 +362,7 @@ mod test {
 		assert_eq!(&quax, &Foo::B);
 	}
 
-	#[cfg(feature = "std")]
+	#[cfg(all(feature = "std", not(miri)))] // https://github.com/rust-lang/miri/issues/658
 	#[test]
 	fn it_works_recover_panic() {
 		use std::panic;

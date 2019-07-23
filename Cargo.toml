@@ -12,9 +12,10 @@ repository = "https://github.com/alecmocatta/replace_with"
 homepage = "https://github.com/alecmocatta/replace_with"
 documentation = "https://docs.rs/replace_with/0.1.3"
 readme = "README.md"
+edition = "2018"
 
 [badges]
-travis-ci = { repository = "alecmocatta/replace_with" }
+azure-devops = { project = "alecmocatta/replace_with", pipeline = "tests" }
 maintenance = { status = "actively-developed" }
 
 [features]
