@@ -2,7 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/replace_with.svg?maxAge=86400)](https://crates.io/crates/replace_with)
 [![MIT / Apache 2.0 licensed](https://img.shields.io/crates/l/replace_with.svg?maxAge=2592000)](#License)
-[![Build Status](https://travis-ci.com/alecmocatta/replace_with.svg?branch=master)](https://travis-ci.com/alecmocatta/replace_with)
+[![Build Status](https://dev.azure.com/alecmocatta/replace_with/_apis/build/status/tests?branchName=master)](https://dev.azure.com/alecmocatta/replace_with/_build/latest?branchName=master)
 
 [Docs](https://docs.rs/replace_with/0.1.3)
 
