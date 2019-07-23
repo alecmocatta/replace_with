@@ -89,8 +89,8 @@ extern crate core as std;
 
 use std::{mem, ptr};
 
-struct CatchUnwind<F: FnOnce()>(mem::ManuallyDrop<F>);
-impl<F: FnOnce()> Drop for CatchUnwind<F> {
+struct OnUnwind<F: FnOnce()>(mem::ManuallyDrop<F>);
+impl<F: FnOnce()> Drop for OnUnwind<F> {
 	#[inline(always)]
 	fn drop(&mut self) {
 		(unsafe { ptr::read(&*self.0) })();
@@ -98,8 +98,8 @@ impl<F: FnOnce()> Drop for CatchUnwind<F> {
 }
 
 #[inline(always)]
-fn catch_unwind<F: FnOnce() -> T, T, P: FnOnce()>(f: F, p: P) -> T {
-	let x = CatchUnwind(mem::ManuallyDrop::new(p));
+fn on_unwind<F: FnOnce() -> T, T, P: FnOnce()>(f: F, p: P) -> T {
+	let x = OnUnwind(mem::ManuallyDrop::new(p));
 	let t = f();
 	let _ = unsafe { ptr::read(&*x.0) };
 	mem::forget(x);
@@ -144,7 +144,7 @@ fn catch_unwind<F: FnOnce() -> T, T, P: FnOnce()>(f: F, p: P) -> T {
 pub fn replace_with<T, D: FnOnce() -> T, F: FnOnce(T) -> T>(dest: &mut T, default: D, f: F) {
 	unsafe {
 		let old = ptr::read(dest);
-		let new = catch_unwind(move || f(old), || ptr::write(dest, default()));
+		let new = on_unwind(move || f(old), || ptr::write(dest, default()));
 		ptr::write(dest, new);
 	}
 }
