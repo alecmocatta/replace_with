@@ -69,7 +69,7 @@
 	all(not(feature = "std"), feature = "nightly"),
 	feature(core_intrinsics)
 )]
-#![doc(html_root_url = "https://docs.rs/replace_with/0.1.3")]
+#![doc(html_root_url = "https://docs.rs/replace_with/0.1.4")]
 #![warn(
 	missing_copy_implementations,
 	missing_debug_implementations,
@@ -97,8 +97,9 @@ impl<F: FnOnce()> Drop for OnUnwind<F> {
 	}
 }
 
+#[doc(hidden)]
 #[inline(always)]
-fn on_unwind<F: FnOnce() -> T, T, P: FnOnce()>(f: F, p: P) -> T {
+pub fn on_unwind<F: FnOnce() -> T, T, P: FnOnce()>(f: F, p: P) -> T {
 	let x = OnUnwind(mem::ManuallyDrop::new(p));
 	let t = f();
 	let _ = unsafe { ptr::read(&*x.0) };
