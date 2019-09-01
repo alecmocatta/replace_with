@@ -97,8 +97,9 @@ impl<F: FnOnce()> Drop for OnUnwind<F> {
 	}
 }
 
+#[doc(hidden)]
 #[inline(always)]
-fn on_unwind<F: FnOnce() -> T, T, P: FnOnce()>(f: F, p: P) -> T {
+pub fn on_unwind<F: FnOnce() -> T, T, P: FnOnce()>(f: F, p: P) -> T {
 	let x = OnUnwind(mem::ManuallyDrop::new(p));
 	let t = f();
 	let _ = unsafe { ptr::read(&*x.0) };
