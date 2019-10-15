@@ -456,7 +456,7 @@ pub fn replace_with_or_abort_and_return<T, U, F: FnOnce(T) -> (U, T)>(dest: &mut
 /// ```
 /// # use replace_with::*;
 ///
-/// fn unsafe take<T>(option: &mut Option<T>) -> Option<T> {
+/// unsafe fn take<T>(option: &mut Option<T>) -> Option<T> {
 /// 	replace_with_or_abort_and_return_unchecked(option, |option| (option, None))
 /// }
 /// ```
