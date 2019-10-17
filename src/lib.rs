@@ -301,6 +301,176 @@ pub unsafe fn replace_with_or_abort_unchecked<T, F: FnOnce(T) -> T>(dest: &mut T
 	ptr::write(dest, f(ptr::read(dest)));
 }
 
+/// Temporarily takes ownership of a value at a mutable location, and replace it with a new value
+/// based on the old one. Lets the closure return a custom value as well.
+///
+/// We move out of the reference temporarily, to apply a closure `f`, returning a new value, which
+/// is then placed at the original value's location.
+///
+/// This is effectively the same function as [`replace_with`], but it lets the closure return a
+/// custom value as well.
+///
+/// # An important note
+///
+/// On panic (or to be more precise, unwinding) of the closure `f`, `default` will be called to
+/// provide a replacement value. `default` should not panic – doing so will constitute a double
+/// panic and will most likely abort the process.
+///
+/// # Example
+///
+/// ```
+/// # use replace_with::*;
+///
+/// fn take<T>(option: &mut Option<T>) -> Option<T> {
+/// 	replace_with_and_return(option, || None, |option| (option, None))
+/// }
+///
+/// let mut opt = Some(3);
+/// assert_eq!(take(&mut opt), Some(3));
+/// assert_eq!(take(&mut opt), None);
+/// ```
+#[inline]
+pub fn replace_with_and_return<T, U, D: FnOnce() -> T, F: FnOnce(T) -> (U, T)>(
+	dest: &mut T, default: D, f: F,
+) -> U {
+	unsafe {
+		let old = ptr::read(dest);
+		let (res, new) = on_unwind(move || f(old), || ptr::write(dest, default()));
+		ptr::write(dest, new);
+		res
+	}
+}
+
+/// Temporarily takes ownership of a value at a mutable location, and replace it with a new value
+/// based on the old one. Replaces with [`Default::default()`] on panic.
+/// Lets the closure return a custom value as well.
+///
+/// We move out of the reference temporarily, to apply a closure `f`, returning a new value, which
+/// is then placed at the original value's location.
+///
+/// This is effectively the same function as [`replace_with_or_default`], but it lets the closure
+/// return a custom value as well.
+///
+/// # An important note
+///
+/// On panic (or to be more precise, unwinding) of the closure `f`, `T::default()` will be called to
+/// provide a replacement value. `T::default()` should not panic – doing so will constitute a double
+/// panic and will most likely abort the process.
+///
+/// Equivalent to `replace_with_and_return(dest, T::default, f)`.
+///
+/// # Example
+///
+/// ```
+/// # use replace_with::*;
+///
+/// fn take<T>(option: &mut Option<T>) -> Option<T> {
+/// 	replace_with_or_default_and_return(option, |option| (option, None))
+/// }
+/// ```
+#[inline]
+pub fn replace_with_or_default_and_return<T: Default, U, F: FnOnce(T) -> (U, T)>(
+	dest: &mut T, f: F,
+) -> U {
+	replace_with_and_return(dest, T::default, f)
+}
+
+/// Temporarily takes ownership of a value at a mutable location, and replace it with a new value
+/// based on the old one. Aborts on panic. Lets the closure return a custom value as well.
+///
+/// We move out of the reference temporarily, to apply a closure `f`, returning a new value, which
+/// is then placed at the original value's location.
+///
+/// This is effectively the same function as [`replace_with_or_abort`], but it lets the closure
+/// return a custom value as well.
+///
+/// # An important note
+///
+/// On panic (or to be more precise, unwinding) of the closure `f`, the process will **abort** to
+/// avoid returning control while `dest` is in a potentially invalid state.
+///
+/// If this behaviour is undesirable, use [`replace_with_and_return`] or
+/// [`replace_with_or_default_and_return`] instead.
+///
+/// Equivalent to `replace_with_and_return(dest, || process::abort(), f)`.
+///
+/// # Example
+///
+/// ```
+/// # use replace_with::*;
+///
+/// fn take<T>(option: &mut Option<T>) -> Option<T> {
+/// 	replace_with_or_abort_and_return(option, |option| (option, None))
+/// }
+/// ```
+#[inline]
+#[cfg(feature = "std")]
+pub fn replace_with_or_abort_and_return<T, U, F: FnOnce(T) -> (U, T)>(dest: &mut T, f: F) -> U {
+	replace_with_and_return(dest, || std::process::abort(), f)
+}
+
+#[inline]
+#[cfg(all(not(feature = "std"), feature = "nightly"))]
+pub fn replace_with_or_abort_and_return<T, U, F: FnOnce(T) -> (U, T)>(dest: &mut T, f: F) -> U {
+	replace_with_and_return(dest, || unsafe { std::intrinsics::abort() }, f)
+}
+
+/// Temporarily takes ownership of a value at a mutable location, and replace it with a new value
+/// based on the old one. Aborts on panic. Lets the closure return a custom value as well.
+///
+/// We move out of the reference temporarily, to apply a closure `f`, returning a new value, which
+/// is then placed at the original value's location.
+///
+/// This is effectively the same function as [`replace_with_or_abort_unchecked`], but it lets the
+/// closure return a custom value as well.
+///
+/// # An important note
+///
+/// On panic (or to be more precise, unwinding) of the closure `f`, the process will **abort** to
+/// avoid returning control while `dest` is in a potentially invalid state.
+///
+/// Unlike for `replace_with_or_abort()` users of `replace_with_or_abort_unchecked()` are expected
+/// to have `features = ["panic_abort", …]` defined in `Cargo.toml`
+/// and `panic = "abort"` defined in their profile for it to behave semantically correct:
+///
+/// ```toml
+/// # Cargo.toml
+///
+/// [profile.debug]
+/// panic = "abort"
+///
+/// [profile.release]
+/// panic = "abort"
+/// ```
+///
+/// **Word of caution:** It is crucial to only ever use this function having defined `panic = "abort"`,
+/// or else bad things may happen. It's *up to you* to uphold this invariant!
+///
+/// If this behaviour is undesirable, use [`replace_with_and_return`] or
+/// [`replace_with_or_default_and_return`].
+///
+/// Equivalent to `replace_with_and_return(dest, || process::abort(), f)`.
+///
+/// # Example
+///
+/// ```
+/// # use replace_with::*;
+///
+/// unsafe fn take<T>(option: &mut Option<T>) -> Option<T> {
+/// 	replace_with_or_abort_and_return_unchecked(option, |option| (option, None))
+/// }
+/// ```
+#[inline]
+#[cfg(feature = "std")]
+#[cfg(feature = "panic_abort")]
+pub unsafe fn replace_with_or_abort_and_return_unchecked<T, U, F: FnOnce(T) -> (U, T)>(
+	dest: &mut T, f: F,
+) -> U {
+	let (res, new) = f(ptr::read(dest));
+	ptr::write(dest, new);
+	res
+}
+
 #[cfg(test)]
 mod test {
 	// These functions copied from https://github.com/Sgeo/take_mut/blob/1bd70d842c6febcd16ec1fe3a954a84032b89f52/src/lib.rs#L102-L147
@@ -361,6 +531,17 @@ mod test {
 			},
 		);
 		assert_eq!(&quax, &Foo::B);
+
+		let n = replace_with_and_return(
+			&mut quax,
+			|| Foo::B,
+			|f| {
+				drop(f);
+				(3, Foo::A)
+			},
+		);
+		assert_eq!(n, 3);
+		assert_eq!(&quax, &Foo::A);
 	}
 
 	#[cfg(all(feature = "std", not(miri)))] // https://github.com/rust-lang/miri/issues/658
