@@ -1,7 +1,9 @@
 //! Temporarily take ownership of a value at a mutable location, and replace it with a new value
 //! based on the old one.
 //!
-//! **[Crates.io](https://crates.io/crates/replace_with) │ [Repo](https://github.com/alecmocatta/replace_with)**
+//! <p style="font-family: 'Fira Sans',sans-serif;padding:0.3em 0"><strong>
+//! <a href="https://crates.io/crates/replace_with">📦&nbsp;&nbsp;Crates.io</a>&nbsp;&nbsp;│&nbsp;&nbsp;<a href="https://github.com/alecmocatta/replace_with">📑&nbsp;&nbsp;GitHub</a>&nbsp;&nbsp;│&nbsp;&nbsp;<a href="https://constellation.zulipchat.com/#narrow/stream/213236-subprojects">💬&nbsp;&nbsp;Chat</a>
+//! </strong></p>
 //!
 //! This crate provides the function [`replace_with()`], which is like [`std::mem::replace()`]
 //! except it allows the replacement value to be mapped from the original value.
@@ -69,7 +71,7 @@
 	all(not(feature = "std"), feature = "nightly"),
 	feature(core_intrinsics)
 )]
-#![doc(html_root_url = "https://docs.rs/replace_with/0.1.5")]
+#![doc(html_root_url = "https://docs.rs/replace_with/0.1.6")]
 #![warn(
 	missing_copy_implementations,
 	missing_debug_implementations,

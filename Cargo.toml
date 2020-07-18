@@ -1,6 +1,6 @@
 [package]
 name = "replace_with"
-version = "0.1.5"
+version = "0.1.6"
 license = "MIT OR Apache-2.0"
 authors = ["Alec Mocatta <alec@mocatta.net>"]
 categories = ["rust-patterns"]
@@ -10,12 +10,12 @@ Temporarily take ownership of a value at a mutable location, and replace it with
 """
 repository = "https://github.com/alecmocatta/replace_with"
 homepage = "https://github.com/alecmocatta/replace_with"
-documentation = "https://docs.rs/replace_with/0.1.5"
+documentation = "https://docs.rs/replace_with"
 readme = "README.md"
 edition = "2018"
 
 [badges]
-azure-devops = { project = "alecmocatta/replace_with", pipeline = "tests" }
+azure-devops = { project = "alecmocatta/replace_with", pipeline = "tests", build = "11" }
 maintenance = { status = "actively-developed" }
 
 [features]
