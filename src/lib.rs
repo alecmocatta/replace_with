@@ -1,7 +1,9 @@
 //! Temporarily take ownership of a value at a mutable location, and replace it with a new value
 //! based on the old one.
 //!
-//! **[Crates.io](https://crates.io/crates/replace_with) │ [Repo](https://github.com/alecmocatta/replace_with)**
+//! <p style="font-family: 'Fira Sans',sans-serif;padding:0.3em 0"><strong>
+//! <a href="https://crates.io/crates/replace_with">📦&nbsp;&nbsp;Crates.io</a>&nbsp;&nbsp;│&nbsp;&nbsp;<a href="https://github.com/alecmocatta/replace_with">📑&nbsp;&nbsp;GitHub</a>&nbsp;&nbsp;│&nbsp;&nbsp;<a href="https://constellation.zulipchat.com/#narrow/stream/213236-subprojects">💬&nbsp;&nbsp;Chat</a>
+//! </strong></p>
 //!
 //! This crate provides the function [`replace_with()`], which is like [`std::mem::replace()`]
 //! except it allows the replacement value to be mapped from the original value.
@@ -26,19 +28,19 @@
 //! ```compile_fail
 //! # use replace_with::*;
 //! enum States {
-//! 	A(String),
-//! 	B(String),
+//!     A(String),
+//!     B(String),
 //! }
 //!
 //! impl States {
-//! 	fn poll(&mut self) {
-//! 		// error[E0507]: cannot move out of borrowed content
-//! 		*self = match *self {
-//! 		//            ^^^^^ cannot move out of borrowed content
-//! 			States::A(a) => States::B(a),
-//! 			States::B(a) => States::A(a),
-//! 		};
-//! 	}
+//!     fn poll(&mut self) {
+//!         // error[E0507]: cannot move out of borrowed content
+//!         *self = match *self {
+//!         //            ^^^^^ cannot move out of borrowed content
+//!             States::A(a) => States::B(a),
+//!             States::B(a) => States::A(a),
+//!         };
+//!     }
 //! }
 //! ```
 //!
@@ -47,18 +49,18 @@
 //! ```
 //! # use replace_with::*;
 //! enum States {
-//! 	A(String),
-//! 	B(String),
+//!     A(String),
+//!     B(String),
 //! }
 //!
 //! # #[cfg(any(feature = "std", feature = "nightly"))]
 //! impl States {
-//! 	fn poll(&mut self) {
-//! 		replace_with_or_abort(self, |self_| match self_ {
-//! 			States::A(a) => States::B(a),
-//! 			States::B(a) => States::A(a),
-//! 		});
-//! 	}
+//!     fn poll(&mut self) {
+//!         replace_with_or_abort(self, |self_| match self_ {
+//!             States::A(a) => States::B(a),
+//!             States::B(a) => States::A(a),
+//!         });
+//!     }
 //! }
 //! ```
 //!
@@ -69,7 +71,7 @@
 	all(not(feature = "std"), feature = "nightly"),
 	feature(core_intrinsics)
 )]
-#![doc(html_root_url = "https://docs.rs/replace_with/0.1.5")]
+#![doc(html_root_url = "https://docs.rs/replace_with/0.1.6")]
 #![warn(
 	missing_copy_implementations,
 	missing_debug_implementations,
@@ -80,17 +82,16 @@
 	unused_qualifications,
 	unused_results,
 	// clippy::pedantic
-)] // from https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
-
+)]
 // #![allow(clippy::inline_always)]
 
 #[cfg(not(feature = "std"))]
-extern crate core as std;
+use core as std;
 
 use std::{mem, ptr};
 
-struct OnUnwind<F: FnOnce()>(mem::ManuallyDrop<F>);
-impl<F: FnOnce()> Drop for OnUnwind<F> {
+struct OnDrop<F: FnOnce()>(mem::ManuallyDrop<F>);
+impl<F: FnOnce()> Drop for OnDrop<F> {
 	#[inline(always)]
 	fn drop(&mut self) {
 		(unsafe { ptr::read(&*self.0) })();
@@ -100,11 +101,18 @@ impl<F: FnOnce()> Drop for OnUnwind<F> {
 #[doc(hidden)]
 #[inline(always)]
 pub fn on_unwind<F: FnOnce() -> T, T, P: FnOnce()>(f: F, p: P) -> T {
-	let x = OnUnwind(mem::ManuallyDrop::new(p));
+	let x = OnDrop(mem::ManuallyDrop::new(p));
 	let t = f();
 	let _ = unsafe { ptr::read(&*x.0) };
 	mem::forget(x);
 	t
+}
+
+#[doc(hidden)]
+#[inline(always)]
+pub fn on_return_or_unwind<F: FnOnce() -> T, T, P: FnOnce()>(f: F, p: P) -> T {
+	let _x = OnDrop(mem::ManuallyDrop::new(p));
+	f()
 }
 
 /// Temporarily takes ownership of a value at a mutable location, and replace it with a new value
@@ -124,21 +132,21 @@ pub fn on_unwind<F: FnOnce() -> T, T, P: FnOnce()>(f: F, p: P) -> T {
 /// ```
 /// # use replace_with::*;
 /// enum States {
-/// 	A(String),
-/// 	B(String),
+///     A(String),
+///     B(String),
 /// }
 ///
 /// impl States {
-/// 	fn poll(&mut self) {
-/// 		replace_with(
-/// 			self,
-/// 			|| States::A(String::new()),
-/// 			|self_| match self_ {
-/// 				States::A(a) => States::B(a),
-/// 				States::B(a) => States::A(a),
-/// 			},
-/// 		);
-/// 	}
+///     fn poll(&mut self) {
+///         replace_with(
+///             self,
+///             || States::A(String::new()),
+///             |self_| match self_ {
+///                 States::A(a) => States::B(a),
+///                 States::B(a) => States::A(a),
+///             },
+///         );
+///     }
 /// }
 /// ```
 #[inline]
@@ -172,23 +180,23 @@ pub fn replace_with<T, D: FnOnce() -> T, F: FnOnce(T) -> T>(dest: &mut T, defaul
 /// ```
 /// # use replace_with::*;
 /// enum States {
-/// 	A(String),
-/// 	B(String),
+///     A(String),
+///     B(String),
 /// }
 ///
 /// impl Default for States {
-/// 	fn default() -> Self {
-/// 		States::A(String::new())
-/// 	}
+///     fn default() -> Self {
+///         States::A(String::new())
+///     }
 /// }
 ///
 /// impl States {
-/// 	fn poll(&mut self) {
-/// 		replace_with_or_default(self, |self_| match self_ {
-/// 			States::A(a) => States::B(a),
-/// 			States::B(a) => States::A(a),
-/// 		});
-/// 	}
+///     fn poll(&mut self) {
+///         replace_with_or_default(self, |self_| match self_ {
+///             States::A(a) => States::B(a),
+///             States::B(a) => States::A(a),
+///         });
+///     }
 /// }
 /// ```
 #[inline]
@@ -216,18 +224,18 @@ pub fn replace_with_or_default<T: Default, F: FnOnce(T) -> T>(dest: &mut T, f: F
 /// ```
 /// # use replace_with::*;
 /// enum States {
-/// 	A(String),
-/// 	B(String),
+///     A(String),
+///     B(String),
 /// }
 ///
 /// # #[cfg(any(feature = "std", feature = "nightly"))]
 /// impl States {
-/// 	fn poll(&mut self) {
-/// 		replace_with_or_abort(self, |self_| match self_ {
-/// 			States::A(a) => States::B(a),
-/// 			States::B(a) => States::A(a),
-/// 		});
-/// 	}
+///     fn poll(&mut self) {
+///         replace_with_or_abort(self, |self_| match self_ {
+///             States::A(a) => States::B(a),
+///             States::B(a) => States::A(a),
+///         });
+///     }
 /// }
 /// ```
 #[inline]
@@ -267,8 +275,10 @@ pub fn replace_with_or_abort<T, F: FnOnce(T) -> T>(dest: &mut T, f: F) {
 /// panic = "abort"
 /// ```
 ///
-/// **Word of caution:** It is crucial to only ever use this function having defined `panic = "abort"`,
-/// or else bad things may happen. It's *up to you* to uphold this invariant!
+/// # Safety
+///
+/// It is crucial to only ever use this function having defined `panic = "abort"`, or else bad
+/// things may happen. It's *up to you* to uphold this invariant!
 ///
 /// If this behaviour is undesirable, use [`replace_with`] or [`replace_with_or_default`].
 ///
@@ -279,19 +289,19 @@ pub fn replace_with_or_abort<T, F: FnOnce(T) -> T>(dest: &mut T, f: F) {
 /// ```
 /// # use replace_with::*;
 /// enum States {
-/// 	A(String),
-/// 	B(String),
+///     A(String),
+///     B(String),
 /// }
 ///
 /// impl States {
-/// 	fn poll(&mut self) {
-/// 		unsafe {
-/// 			replace_with_or_abort_unchecked(self, |self_| match self_ {
-/// 				States::A(a) => States::B(a),
-///	 				States::B(a) => States::A(a),
-/// 			});
-/// 		}
-/// 	}
+///     fn poll(&mut self) {
+///         unsafe {
+///             replace_with_or_abort_unchecked(self, |self_| match self_ {
+///                 States::A(a) => States::B(a),
+///                 States::B(a) => States::A(a),
+///             });
+///         }
+///     }
 /// }
 /// ```
 ///
@@ -322,7 +332,7 @@ pub unsafe fn replace_with_or_abort_unchecked<T, F: FnOnce(T) -> T>(dest: &mut T
 /// # use replace_with::*;
 ///
 /// fn take<T>(option: &mut Option<T>) -> Option<T> {
-/// 	replace_with_and_return(option, || None, |option| (option, None))
+///     replace_with_and_return(option, || None, |option| (option, None))
 /// }
 ///
 /// let mut opt = Some(3);
@@ -365,7 +375,7 @@ pub fn replace_with_and_return<T, U, D: FnOnce() -> T, F: FnOnce(T) -> (U, T)>(
 /// # use replace_with::*;
 ///
 /// fn take<T>(option: &mut Option<T>) -> Option<T> {
-/// 	replace_with_or_default_and_return(option, |option| (option, None))
+///     replace_with_or_default_and_return(option, |option| (option, None))
 /// }
 /// ```
 #[inline]
@@ -400,7 +410,7 @@ pub fn replace_with_or_default_and_return<T: Default, U, F: FnOnce(T) -> (U, T)>
 /// # use replace_with::*;
 ///
 /// fn take<T>(option: &mut Option<T>) -> Option<T> {
-/// 	replace_with_or_abort_and_return(option, |option| (option, None))
+///     replace_with_or_abort_and_return(option, |option| (option, None))
 /// }
 /// ```
 #[inline]
@@ -443,8 +453,10 @@ pub fn replace_with_or_abort_and_return<T, U, F: FnOnce(T) -> (U, T)>(dest: &mut
 /// panic = "abort"
 /// ```
 ///
-/// **Word of caution:** It is crucial to only ever use this function having defined `panic = "abort"`,
-/// or else bad things may happen. It's *up to you* to uphold this invariant!
+/// # Safety
+///
+/// It is crucial to only ever use this function having defined `panic = "abort"`, or else bad
+/// things may happen. It's *up to you* to uphold this invariant!
 ///
 /// If this behaviour is undesirable, use [`replace_with_and_return`] or
 /// [`replace_with_or_default_and_return`].
@@ -457,7 +469,7 @@ pub fn replace_with_or_abort_and_return<T, U, F: FnOnce(T) -> (U, T)>(dest: &mut
 /// # use replace_with::*;
 ///
 /// unsafe fn take<T>(option: &mut Option<T>) -> Option<T> {
-/// 	replace_with_or_abort_and_return_unchecked(option, |option| (option, None))
+///     replace_with_or_abort_and_return_unchecked(option, |option| (option, None))
 /// }
 /// ```
 #[inline]
@@ -516,8 +528,7 @@ mod test {
 			#[cfg(not(feature = "std"))]
 			fn drop(&mut self) {
 				match *self {
-					Foo::A => (),
-					Foo::B => (),
+					Foo::A | Foo::B => (),
 				}
 			}
 		}

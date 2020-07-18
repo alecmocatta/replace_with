@@ -14,7 +14,7 @@ jobs:
     endpoint: alecmocatta
     default:
       rust_toolchain: 1.21.0 stable beta nightly
-      rust_lint_toolchain: nightly-2019-07-19
+      rust_lint_toolchain: nightly-2020-07-12
       rust_flags: ''
       rust_features: ';default;all'
       rust_target_check: ''
@@ -22,11 +22,11 @@ jobs:
       rust_target_run: ''
     matrix:
       windows:
-        imageName: 'vs2017-win2016'
+        imageName: 'windows-latest'
         rust_target_run: 'x86_64-pc-windows-msvc'
       mac:
-        imageName: 'macos-10.13'
+        imageName: 'macos-latest'
         rust_target_run: 'x86_64-apple-darwin'
       linux:
-        imageName: 'ubuntu-16.04'
-        rust_target_run: 'x86_64-unknown-linux-gnu x86_64-unknown-linux-musl'
+        imageName: 'ubuntu-latest'
+        rust_target_run: 'x86_64-unknown-linux-gnu'
