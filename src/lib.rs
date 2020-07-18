@@ -89,8 +89,8 @@ extern crate core as std;
 
 use std::{mem, ptr};
 
-struct OnUnwind<F: FnOnce()>(mem::ManuallyDrop<F>);
-impl<F: FnOnce()> Drop for OnUnwind<F> {
+struct OnDrop<F: FnOnce()>(mem::ManuallyDrop<F>);
+impl<F: FnOnce()> Drop for OnDrop<F> {
 	#[inline(always)]
 	fn drop(&mut self) {
 		(unsafe { ptr::read(&*self.0) })();
@@ -100,11 +100,18 @@ impl<F: FnOnce()> Drop for OnUnwind<F> {
 #[doc(hidden)]
 #[inline(always)]
 pub fn on_unwind<F: FnOnce() -> T, T, P: FnOnce()>(f: F, p: P) -> T {
-	let x = OnUnwind(mem::ManuallyDrop::new(p));
+	let x = OnDrop(mem::ManuallyDrop::new(p));
 	let t = f();
 	let _ = unsafe { ptr::read(&*x.0) };
 	mem::forget(x);
 	t
+}
+
+#[doc(hidden)]
+#[inline(always)]
+pub fn on_return_or_unwind<F: FnOnce() -> T, T, P: FnOnce()>(f: F, p: P) -> T {
+	let _x = OnDrop(mem::ManuallyDrop::new(p));
+	f()
 }
 
 /// Temporarily takes ownership of a value at a mutable location, and replace it with a new value
