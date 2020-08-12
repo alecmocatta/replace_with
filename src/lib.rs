@@ -103,8 +103,8 @@ impl<F: FnOnce()> Drop for OnDrop<F> {
 pub fn on_unwind<F: FnOnce() -> T, T, P: FnOnce()>(f: F, p: P) -> T {
 	let x = OnDrop(mem::ManuallyDrop::new(p));
 	let t = f();
-	let _ = unsafe { ptr::read(&*x.0) };
-	mem::forget(x);
+	let mut x = mem::ManuallyDrop::new(x);
+	unsafe { mem::ManuallyDrop::drop(&mut x.0) };
 	t
 }
 
