@@ -71,7 +71,7 @@
 	all(not(feature = "std"), feature = "nightly"),
 	feature(core_intrinsics)
 )]
-#![doc(html_root_url = "https://docs.rs/replace_with/0.1.6")]
+#![doc(html_root_url = "https://docs.rs/replace_with/0.1.7")]
 #![warn(
 	missing_copy_implementations,
 	missing_debug_implementations,
