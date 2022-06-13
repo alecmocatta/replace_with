@@ -473,7 +473,6 @@ pub fn replace_with_or_abort_and_return<T, U, F: FnOnce(T) -> (U, T)>(dest: &mut
 /// }
 /// ```
 #[inline]
-#[cfg(feature = "std")]
 #[cfg(feature = "panic_abort")]
 pub unsafe fn replace_with_or_abort_and_return_unchecked<T, U, F: FnOnce(T) -> (U, T)>(
 	dest: &mut T, f: F,
